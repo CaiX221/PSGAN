@@ -140,7 +140,7 @@ class PreProcess:
         np_image = np.array(image)
         mask = self.face_parse.parse(cv2.resize(np_image, (512, 512)))
         # obtain face parsing result
-        # image = image.resize((512, 512), Image.ANTIALIAS)
+        # image = image.resize((512, 512), Image.LANCZOS)
         mask = F.interpolate(
             mask.view(1, 1, 512, 512),
             (self.img_size, self.img_size),
@@ -153,7 +153,7 @@ class PreProcess:
         lms = lms.round()
 
         mask, diff = self.process(mask, lms, device=self.device)
-        image = image.resize((self.img_size, self.img_size), Image.ANTIALIAS)
+        image = image.resize((self.img_size, self.img_size), Image.LANCZOS)
         image = transform(image)
         real = to_var(image.unsqueeze(0))
         return [real, mask, diff], face_on_image, crop_face

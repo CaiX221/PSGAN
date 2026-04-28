@@ -6,7 +6,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models import VGG as TVGG
-from torchvision.models.vgg import load_state_dict_from_url, model_urls, cfgs
+from torch.hub import load_state_dict_from_url
+from torchvision.models.vgg import cfgs
 
 from ops.spectral_norm import spectral_norm as SpectralNorm
 from concern.track import Track
