@@ -9,6 +9,8 @@ from torchvision.models import VGG as TVGG
 from torch.hub import load_state_dict_from_url
 from torchvision.models.vgg import cfgs
 
+model_urls = {"vgg16": "https://download.pytorch.org/models/vgg16-397923af.pth"}
+
 from ops.spectral_norm import spectral_norm as SpectralNorm
 from concern.track import Track
 
