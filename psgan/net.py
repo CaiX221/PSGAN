@@ -72,6 +72,47 @@ class NONLocalBlock2D(nn.Module):
         y = y.view(batch_size, 1, *source.size()[2:])
         return y
 
+class StructureEncoder(nn.Module):
+    """
+    Lightweight encoder for SPIGA facial structure maps.
+    Extracts dense structural features from colored landmark maps.
+    Inspired by Stable-Makeup's Structural Encoder.
+    
+    Input:  SPIGA structure map (3, 256, 256) - colored 68-point landmark lines
+            Green = jawline, Yellow = eyebrows, Magenta = eyes, Cyan/Blue = lips
+    Output: structural features (256, 64, 64) - matches c_tnet dimensions in Generator
+    """
+    def __init__(self):
+        super(StructureEncoder, self).__init__()
+        self.encoder = nn.Sequential(
+            # Layer 1: Extract low-level features (edges, line colors)
+            # (3, 256, 256) -> (64, 256, 256) - no spatial compression, stride=1
+            nn.Conv2d(3, 64, kernel_size=7, stride=1, padding=3, bias=False),
+            nn.InstanceNorm2d(64, affine=True),
+            nn.ReLU(inplace=True),
+
+            # Layer 2: Extract mid-level features (local shapes: eyebrow curves, lip contours)
+            # (64, 256, 256) -> (128, 128, 128) - downsample 2x via stride=2
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.InstanceNorm2d(128, affine=True),
+            nn.ReLU(inplace=True),
+
+            # Layer 3: Extract high-level features (global face structure layout)
+            # (128, 128, 128) -> (256, 64, 64) - downsample 2x via stride=2
+            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.InstanceNorm2d(256, affine=True),
+            nn.ReLU(inplace=True),
+        )
+
+    def forward(self, x):
+        """
+        Args:
+            x: SPIGA structure map, shape (3, 256, 256)
+        Returns:
+            Dense structural features, shape (256, 64, 64)
+        """
+        return self.encoder(x)
+
 
 class Generator(nn.Module, Track):
     """Generator. Encoder-Decoder Architecture."""
@@ -137,6 +178,10 @@ class Generator(nn.Module, Track):
             nn.Tanh()
         )
         self.tnet_out = layers
+
+        # Structure encoder for dense SPIGA landmark guidance (modification for SPIGA integration)
+        self.structure_encoder = StructureEncoder()
+
         Track.__init__(self)
 
     @staticmethod
@@ -206,7 +251,7 @@ class Generator(nn.Module, Track):
         self.track("after bmm")
         return ret
 
-    def forward(self, c, s, mask_c, mask_s, diff_c, diff_s, gamma=None, beta=None, ret=False):
+    def forward(self, c, s, mask_c, mask_s, diff_c, diff_s, gamma=None, beta=None, ret=False, structure_map=None):
         c, s, mask_c, mask_s, diff_c, diff_s = [x.squeeze(0) if x.ndim == 5 else x for x in [c, s, mask_c, mask_s, diff_c, diff_s]]
         """attention version
         c: content, stands for source image. shape: (b, c, h, w)
@@ -253,6 +298,11 @@ class Generator(nn.Module, Track):
                     # gamma, beta = param_A[0]*w + param_B[0]*(1-w), param_A[1]*w + param_B[1]*(1-w)
 
                 c_tnet = c_tnet * (1 + gamma) + beta    # apply makeup transfer using makeup matrices
+
+                # Add dense structural guidance from SPIGA structure map if structure map is provided
+                if structure_map is not None:
+                    struct_feat = self.structure_encoder(structure_map)
+                    c_tnet = c_tnet + struct_feat
 
             if gamma is None and i <= 2:
                 s = cur_pnet_bottleneck(s)
