@@ -145,20 +145,28 @@ class Solver(Track):
         if os.path.exists(G_path):
             # strict=False allows loading old checkpoint without StructureEncoder weights
             # (StructureEncoder added in PSGAN+, falls back to xavier init)
-            missing, unexpected = self.G.load_state_dict(torch.load(G_path), strict=False)
+            state_dict = torch.load(G_path)
+            # Strip "module." prefix if present (from DataParallel-saved checkpoint)
+            state_dict = {k.replace('module.', '', 1): v for k, v in state_dict.items()}
+            missing, unexpected = self.G.load_state_dict(state_dict, strict=False)
             print('loaded trained generator {}..!'.format(G_path))
             if missing:
                 print('  Missing (xavier init): {} keys'.format(len(missing)))
             if unexpected:
                 print('  Unexpected (ignored): {} keys'.format(len(unexpected)))
+
         D_A_path = os.path.join(self.checkpoint, 'D_A.pth')
         if os.path.exists(D_A_path):
-            self.D_A.load_state_dict(torch.load(D_A_path))
+            state_dict = torch.load(D_A_path)
+            state_dict = {k.replace('module.', '', 1): v for k, v in state_dict.items()}
+            self.D_A.load_state_dict(state_dict)
             print('loaded trained discriminator A {}..!'.format(D_A_path))
 
         D_B_path = os.path.join(self.checkpoint, 'D_B.pth')
         if os.path.exists(D_B_path):
-            self.D_B.load_state_dict(torch.load(D_B_path))
+            state_dict = torch.load(D_B_path)
+            state_dict = {k.replace('module.', '', 1): v for k, v in state_dict.items()}
+            self.D_B.load_state_dict(state_dict)
             print('loaded trained discriminator B {}..!'.format(D_B_path))
 
     def generate(self, org_A, ref_B, lms_A=None, lms_B=None, mask_A=None, mask_B=None, 
@@ -398,18 +406,19 @@ class Solver(Track):
     def save_models(self):
         if not osp.exists(self.snapshot_path):
             os.makedirs(self.snapshot_path)
-        torch.save(
-            self.G.state_dict(),
-            os.path.join(
-                self.snapshot_path, '{}_{}_G.pth'.format(self.e + 1, self.i + 1)))
-        torch.save(
-            self.D_A.state_dict(),
-            os.path.join(
-                self.snapshot_path, '{}_{}_D_A.pth'.format(self.e + 1, self.i + 1)))
-        torch.save(
-            self.D_B.state_dict(),
-            os.path.join(
-                self.snapshot_path, '{}_{}_D_B.pth'.format(self.e + 1, self.i + 1)))
+
+        # If wrapped in DataParallel, save the underlying module's state_dict
+        # (so checkpoints have clean keys without "module." prefix)
+        G_state = self.G.module.state_dict() if hasattr(self.G, 'module') else self.G.state_dict()
+        D_A_state = self.D_A.module.state_dict() if hasattr(self.D_A, 'module') else self.D_A.state_dict()
+        D_B_state = self.D_B.module.state_dict() if hasattr(self.D_B, 'module') else self.D_B.state_dict()
+
+        torch.save(G_state,
+            os.path.join(self.snapshot_path, '{}_{}_G.pth'.format(self.e + 1, self.i + 1)))
+        torch.save(D_A_state,
+            os.path.join(self.snapshot_path, '{}_{}_D_A.pth'.format(self.e + 1, self.i + 1)))
+        torch.save(D_B_state,
+            os.path.join(self.snapshot_path, '{}_{}_D_B.pth'.format(self.e + 1, self.i + 1)))
 
     def vis_train(self, img_train_list):
         # saving training results

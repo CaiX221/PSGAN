@@ -59,3 +59,4 @@ log
 data
 
 assets/models/baseline_pretrained/
+log_run1_backup_oom
