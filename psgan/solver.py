@@ -369,7 +369,7 @@ class Solver(Track):
                 #save the images
                 if (self.i) % self.vis_step == 0:
                     print("Saving middle output...")
-                    self.vis_train([image_s, image_r, spiga_s, spiga_r, fake_A, rec_A, mask_s[:, :, 0], mask_r[:, :, 0]])
+                    self.vis_train([image_s, image_r, fake_A, rec_A, spiga_s, spiga_r, mask_s[:, :, 0], mask_r[:, :, 0]])
 
                 # Save model checkpoints
                 if (self.i) % self.snapshot_step == 0:
