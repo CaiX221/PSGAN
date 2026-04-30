@@ -320,12 +320,14 @@ class Solver(Track):
                     # self.track("Generator recover")
 
                     # vgg loss
+                    torch.cuda.empty_cache()        # release fragmented memory before VGG
                     vgg_s = self.vgg(image_s)
                     vgg_s = Variable(vgg_s.data).detach()
                     vgg_fake_A = self.vgg(fake_A)
                     g_loss_A_vgg = self.criterionL2(vgg_fake_A, vgg_s) * self.lambda_A * self.lambda_vgg
                     # self.track("Generator vgg")
 
+                    torch.cuda.empty_cache()           # release again before second VGG pair
                     vgg_r = self.vgg(image_r)
                     vgg_r = Variable(vgg_r.data).detach()
                     vgg_fake_B = self.vgg(fake_B)
@@ -345,16 +347,15 @@ class Solver(Track):
 
                     # Logging
                     self.loss['G-A-loss-adv'] = g_A_loss_adv.mean().item()
-                    self.loss['G-B-loss-adv'] = g_A_loss_adv.mean().item()
+                    self.loss['G-B-loss-adv'] = g_B_loss_adv.mean().item()
                     self.loss['G-loss-org'] = g_loss_rec_A.mean().item()
                     self.loss['G-loss-ref'] = g_loss_rec_B.mean().item()
                     self.loss['G-loss-idt'] = loss_idt.mean().item()
                     self.loss['G-loss-img-rec'] = (g_loss_rec_A + g_loss_rec_B).mean().item()
                     self.loss['G-loss-vgg-rec'] = (g_loss_A_vgg + g_loss_B_vgg).mean().item()
-                    self.loss['G-loss-img-rec'] = g_loss_rec_A.mean().item()
-                    self.loss['G-loss-vgg-rec'] = g_loss_A_vgg.mean().item()
 
                     self.loss['G-A-loss-his'] = g_A_loss_his.mean().item()
+                    self.loss['G-B-loss-his'] = g_B_loss_his.mean().item()  
 
 
                 # Print out log info
@@ -368,7 +369,7 @@ class Solver(Track):
                 #save the images
                 if (self.i) % self.vis_step == 0:
                     print("Saving middle output...")
-                    self.vis_train([image_s, image_r, fake_A, rec_A, mask_s[:, :, 0], mask_r[:, :, 0]])
+                    self.vis_train([image_s, image_r, spiga_s, spiga_r, fake_A, rec_A, mask_s[:, :, 0], mask_r[:, :, 0]])
 
                 # Save model checkpoints
                 if (self.i) % self.snapshot_step == 0:
