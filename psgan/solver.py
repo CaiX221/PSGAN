@@ -143,8 +143,14 @@ class Solver(Track):
     def load_checkpoint(self):
         G_path = os.path.join(self.checkpoint, 'G.pth')
         if os.path.exists(G_path):
-            self.G.load_state_dict(torch.load(G_path))
+            # strict=False allows loading old checkpoint without StructureEncoder weights
+            # (StructureEncoder added in PSGAN+, falls back to xavier init)
+            missing, unexpected = self.G.load_state_dict(torch.load(G_path), strict=False)
             print('loaded trained generator {}..!'.format(G_path))
+            if missing:
+                print('  Missing (xavier init): {} keys'.format(len(missing)))
+            if unexpected:
+                print('  Unexpected (ignored): {} keys'.format(len(unexpected)))
         D_A_path = os.path.join(self.checkpoint, 'D_A.pth')
         if os.path.exists(D_A_path):
             self.D_A.load_state_dict(torch.load(D_A_path))
@@ -189,10 +195,11 @@ class Solver(Track):
 
         for self.e in range(start, self.num_epochs):
             for self.i, (source_input, reference_input) in enumerate(self.data_loader_train):
-                # image, mask, dist
+                # image, mask, dist, spiga
                 image_s, image_r = source_input[0].to(self.device), reference_input[0].to(self.device)
                 mask_s, mask_r = source_input[1].to(self.device), reference_input[1].to(self.device) 
                 dist_s, dist_r = source_input[2].to(self.device), reference_input[2].to(self.device)
+                spiga_s, spiga_r = source_input[3].to(self.device), reference_input[3].to(self.device)
                 self.track("data")
 
                 # ================== Train D ================== #
@@ -203,7 +210,7 @@ class Solver(Track):
                 d_loss_real = self.criterionGAN(out, True)
                 self.track("D_A_loss")
                 # Fake
-                fake_A = self.G(image_s, image_r, mask_s, mask_r, dist_s, dist_r)
+                fake_A = self.G(image_s, image_r, mask_s, mask_r, dist_s, dist_r, structure_map=spiga_s)
                 self.track("G")
                 fake_A = Variable(fake_A.data).detach()
                 out = self.D_A(fake_A)
@@ -227,7 +234,7 @@ class Solver(Track):
                 d_loss_real = self.criterionGAN(out, True)
                 # Fake
                 self.track("G-before")
-                fake_B = self.G(image_r, image_s, mask_r, mask_s, dist_r, dist_s)
+                fake_B = self.G(image_r, image_s, mask_r, mask_s, dist_r, dist_s, structure_map=spiga_r)
                 self.track("G-2")
                 fake_B = Variable(fake_B.data).detach()
                 out = self.D_B(fake_B)
@@ -250,8 +257,8 @@ class Solver(Track):
                     assert self.lambda_idt > 0
                     
                     # G should be identity if ref_B or org_A is fed
-                    idt_A = self.G(image_s, image_s, mask_s, mask_s, dist_s, dist_s)
-                    idt_B = self.G(image_r, image_r, mask_r, mask_r, dist_r, dist_r)
+                    idt_A = self.G(image_s, image_s, mask_s, mask_s, dist_s, dist_s, structure_map=spiga_s)
+                    idt_B = self.G(image_r, image_r, mask_r, mask_r, dist_r, dist_r, structure_map=spiga_r)
                     loss_idt_A = self.criterionL1(idt_A, image_s) * self.lambda_A * self.lambda_idt
                     loss_idt_B = self.criterionL1(idt_B, image_r) * self.lambda_B * self.lambda_idt
                     # loss_idt
@@ -261,12 +268,12 @@ class Solver(Track):
 
                     # GAN loss D_A(G_A(A))
                     # fake_A in class B, 
-                    fake_A = self.G(image_s, image_r, mask_s, mask_r, dist_s, dist_r)
+                    fake_A = self.G(image_s, image_r, mask_s, mask_r, dist_s, dist_r, structure_map=spiga_s)
                     pred_fake = self.D_A(fake_A)
                     g_A_loss_adv = self.criterionGAN(pred_fake, True)
 
                     # GAN loss D_B(G_B(B))
-                    fake_B = self.G(image_r, image_s, mask_r, mask_s, dist_r, dist_s)
+                    fake_B = self.G(image_r, image_s, mask_r, mask_s, dist_r, dist_s, structure_map=spiga_r)
                     pred_fake = self.D_B(fake_B)
                     g_B_loss_adv = self.criterionGAN(pred_fake, True)
 
@@ -305,8 +312,8 @@ class Solver(Track):
                     # self.track("Generator histogram")
 
                     # cycle loss
-                    rec_A = self.G(fake_A, image_s, mask_s, mask_s, dist_s, dist_s)
-                    rec_B = self.G(fake_B, image_r, mask_r, mask_r, dist_r, dist_r)
+                    rec_A = self.G(fake_A, image_s, mask_s, mask_s, dist_s, dist_s, structure_map=spiga_s)
+                    rec_B = self.G(fake_B, image_r, mask_r, mask_r, dist_r, dist_r, structure_map=spiga_r)
 
                     g_loss_rec_A = self.criterionL1(rec_A, image_s) * self.lambda_A
                     g_loss_rec_B = self.criterionL1(rec_B, image_r) * self.lambda_B

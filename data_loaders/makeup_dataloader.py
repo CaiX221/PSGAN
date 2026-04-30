@@ -19,7 +19,7 @@ class MakeupDataloader(Dataset):
         self.reader = DataReader(image_path)
 
     def __getitem__(self, index):
-        (image_s, mask_s, lm_s), (image_r, mask_r, lm_r) =\
+        (image_s, mask_s, lm_s, spiga_s), (image_r, mask_r, lm_r, spiga_r) =\
             self.reader.pick()
         lm_s = self.preprocess.relative2absolute(lm_s / image_s.size)
         lm_r = self.preprocess.relative2absolute(lm_r / image_r.size)
@@ -28,11 +28,16 @@ class MakeupDataloader(Dataset):
         image_r = self.transform(image_r)
         mask_r = self.transform_mask(Image.fromarray(mask_r))
 
+        # SPIGA structure maps go through same transform as images:
+        # Resize + ToTensor + Normalize to [-1, 1]
+        spiga_s = self.transform(spiga_s)
+        spiga_r = self.transform(spiga_r)
+
         mask_s, dist_s = self.preprocess.process(
             mask_s.unsqueeze(0), lm_s)
         mask_r, dist_r = self.preprocess.process(
             mask_r.unsqueeze(0), lm_r)
-        return [image_s, mask_s, dist_s], [image_r, mask_r, dist_r]
+        return [image_s, mask_s, dist_s, spiga_s], [image_r, mask_r, dist_r, spiga_r]
 
 
     def __len__(self):

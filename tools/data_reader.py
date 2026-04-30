@@ -9,7 +9,8 @@ import numpy as np
 class DataReader:
     image_dir_name = "images"
     seg_dir_name = "segs"
-    landmark_dir_name = "landmarks"
+    landmark_dir_name = "landmarks" # based on DLIB's 68-point landmark detection,
+    spiga_dir_name = "spiga" # SPIGA 68-point structure maps (colored landmark maps)
     makeup = "makeup.txt"
     non_makeup = "non-makeup.txt"
 
@@ -18,6 +19,7 @@ class DataReader:
         self.image_dir = self.data_dir.joinpath(self.image_dir_name)
         self.seg_dir = self.data_dir.joinpath(self.seg_dir_name)
         self.lms_dir = self.data_dir.joinpath(self.landmark_dir_name)
+        self.spiga_dir = self.data_dir.joinpath(self.spiga_dir_name) # SPIGA structure maps
         self.makeup_names = [name.strip() for name in self.data_dir.joinpath(self.makeup).open("rt")]
         self.non_makeup_names = [name.strip() for name in self.data_dir.joinpath(self.non_makeup).open("rt")]
 
@@ -33,8 +35,9 @@ class DataReader:
             )
         )
         lm = pickle.load(self.lms_dir.joinpath(name).open("rb"))
+        spiga = Image.open(self.spiga_dir.joinpath(name).as_posix()).convert("RGB")
 
-        return image, seg, lm
+        return image, seg, lm, spiga
 
     def __getitem__(self, index):
         if self.random is None:
