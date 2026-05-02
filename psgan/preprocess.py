@@ -16,6 +16,15 @@ from torchvision import transforms
 
 import faceutils as futils
 
+# SPIGA imports for inference structure map generation
+# Reuses the same functions as training data pipeline (generate_spiga.py)
+from generate_spiga import (
+    get_landmarks,
+    parse_landmarks,
+    draw_structure_map,
+    detector as spiga_detector,
+)
+
 transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize([0.5,0.5,0.5],[0.5,0.5,0.5])])
@@ -127,6 +136,23 @@ class PreProcess:
 
         return mask_aug, diff_re
 
+    def _generate_spiga_map(self, image_pil):
+        """Generate SPIGA structure map for inference.
+        Mirrors the training data pipeline (generate_spiga.py).
+        Returns a PIL Image of size (img_size, img_size).
+        Falls back to black image if SPIGA detection fails.
+        """
+        try:
+            landmarks = get_landmarks(image_pil, spiga_detector)
+            if len(landmarks) == 0:
+                # No face detected by SPIGA -> black fallback (matches training)
+                return Image.new('RGB', (self.img_size, self.img_size), color=(0, 0, 0))
+            parsed = parse_landmarks(landmarks)
+            return draw_structure_map(parsed, size=self.img_size)
+        except Exception as e:
+            print(f"  [SPIGA] Warning: structure map generation failed ({e}); using black fallback")
+            return Image.new('RGB', (self.img_size, self.img_size), color=(0, 0, 0))
+
     def __call__(self, image: Image):
         face = futils.dlib.detect(image)
 
@@ -139,8 +165,6 @@ class PreProcess:
             image, face_on_image, self.up_ratio, self.down_ratio, self.width_ratio)
         np_image = np.array(image)
         mask = self.face_parse.parse(cv2.resize(np_image, (512, 512)))
-        # obtain face parsing result
-        # image = image.resize((512, 512), Image.LANCZOS)
         mask = F.interpolate(
             mask.view(1, 1, 512, 512),
             (self.img_size, self.img_size),
@@ -153,7 +177,17 @@ class PreProcess:
         lms = lms.round()
 
         mask, diff = self.process(mask, lms, device=self.device)
-        image = image.resize((self.img_size, self.img_size), Image.LANCZOS)
-        image = transform(image)
-        real = to_var(image.unsqueeze(0))
-        return [real, mask, diff], face_on_image, crop_face
+
+        # Resize cropped face to img_size for both image tensor and SPIGA generation
+        image_resized = image.resize((self.img_size, self.img_size), Image.LANCZOS)
+
+        # Image tensor (existing path)
+        image_tensor = transform(image_resized)
+        real = to_var(image_tensor.unsqueeze(0))
+
+        # SPIGA structure map (new path - matches training pipeline)
+        spiga_pil = self._generate_spiga_map(image_resized)
+        spiga_tensor = transform(spiga_pil)
+        spiga = to_var(spiga_tensor.unsqueeze(0))
+
+        return [real, mask, diff, spiga], face_on_image, crop_face

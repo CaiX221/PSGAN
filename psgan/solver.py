@@ -27,7 +27,7 @@ class Solver(Track):
     def __init__(self, config, device="cpu", data_loader=None, inference=False):
         self.G = net.Generator()
         if inference:
-            self.G.load_state_dict(torch.load(inference, map_location=torch.device(device)))
+            self.G.load_state_dict(torch.load(inference, map_location=torch.device(device)), strict=False)
             self.G = self.G.to(device).eval()
             return
 
@@ -170,21 +170,22 @@ class Solver(Track):
             print('loaded trained discriminator B {}..!'.format(D_B_path))
 
     def generate(self, org_A, ref_B, lms_A=None, lms_B=None, mask_A=None, mask_B=None, 
-                 diff_A=None, diff_B=None, gamma=None, beta=None, ret=False):
+                 diff_A=None, diff_B=None, gamma=None, beta=None, ret=False, structure_map=None):
         """org_A is content, ref_B is style"""
-        res = self.G(org_A, ref_B, mask_A, mask_B, diff_A, diff_B, gamma, beta, ret)
+        res = self.G(org_A, ref_B, mask_A, mask_B, diff_A, diff_B, gamma, beta, ret, structure_map=structure_map)
         return res
 
     # mask attribute: 0:background 1:face 2:left-eyebrown 3:right-eyebrown 4:left-eye 5: right-eye 6: nose
     # 7: upper-lip 8: teeth 9: under-lip 10:hair 11: left-ear 12: right-ear 13: neck
 
-    def test(self, real_A, mask_A, diff_A, real_B, mask_B, diff_B):
+    def test(self, real_A, mask_A, diff_A, spiga_A, real_B, mask_B, diff_B, spiga_B):
         cur_prama = None
         with torch.no_grad():
             cur_prama = self.generate(real_A, real_B, None, None, mask_A, mask_B, 
-                                      diff_A, diff_B, ret=True)
+                                      diff_A, diff_B, ret=True, structure_map=spiga_A)
             fake_A = self.generate(real_A, real_B, None, None, mask_A, mask_B, 
-                                   diff_A, diff_B, gamma=cur_prama[0], beta=cur_prama[1])
+                                   diff_A, diff_B, gamma=cur_prama[0], beta=cur_prama[1],
+                                   structure_map=spiga_A)
         fake_A = fake_A.squeeze(0)
 
         # normalize
