@@ -65,6 +65,7 @@ log_run3_oom
 log_run4_oom
 log_run5_oom
 demo_comparison/
+results/
 
 *.backup
 *.tar.gz
