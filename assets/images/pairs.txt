@@ -1,14 +1,15 @@
 # Source-Reference pairs for evaluation
 # Format: source_filename reference_filename
-# 10 pairs covering Western/Asian source × Western/Asian reference combinations
+# 10 pairs covering Western/Asian source × Western/Asian makeup combinations
+# Pair 01 uses original PSGAN demo defaults (xfsy_0106 + vFG586)
 
-xfsy_0106.png 08d07734712422248a6af552f03453ea.png
-xfsy_0301.png af0133cb94d36f4ab6fd45bb08a12d63.png
-xfsy_0307.png b7fd5266d01609248414333cdf0735fae6cd34e7.png
-xfsy_0417.png 8ed6feb8f72b89632d02fbafcc2511a9.png
-xfsy_0441.png vFG11.png
-xfsy_0518.png vFG140.png
+xfsy_0106.png vFG586.png
+xfsy_0230.png 08d07734712422248a6af552f03453ea.png
+xfsy_0417.png af0133cb94d36f4ab6fd45bb08a12d63.png
+xfsy_0441.png b7fd5266d01609248414333cdf0735fae6cd34e7.png
+xfsy_0518.png 8ed6feb8f72b89632d02fbafcc2511a9.png
+xfsy_0520.png vFG140.png
 vSYYZ15.png vFG74.png
 vSYYZ563.png vHX518.png
 vSYYZ784.png vRX357.png
-vSYYZ81.png XYH-107.png
+vSYYZ86.png XYH-107.png
