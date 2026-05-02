@@ -27,7 +27,7 @@ class Solver(Track):
     def __init__(self, config, device="cpu", data_loader=None, inference=False):
         self.G = net.Generator()
         if inference:
-            self.G.load_state_dict(torch.load(inference, map_location=torch.device(device)))
+            self.G.load_state_dict(torch.load(inference, map_location=torch.device(device)), strict=False)
             self.G = self.G.to(device).eval()
             return
 
