@@ -60,3 +60,15 @@ data
 
 assets/models/baseline_pretrained/
 log_run1_backup_oom
+log_run2_oom
+log_run3_oom
+log_run4_oom
+log_run5_oom
+demo_comparison/
+
+*.backup
+*.tar.gz
+
+# Trained model weights (don't commit, too big)
+assets/models/D_A.pth
+assets/models/D_B.pth
