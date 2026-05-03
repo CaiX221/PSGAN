@@ -1,15 +1,35 @@
 # Source-Reference pairs for evaluation
 # Format: source_filename reference_filename
-# 10 pairs covering Western/Asian source × Western/Asian makeup combinations
-# Pair 01 uses original PSGAN demo defaults (xfsy_0106 + vFG586)
+# Auto-generated from Data/images
+# Priority: filenames starting with v are paired with v first
 
-xfsy_0106.png vFG586.png
-xfsy_0230.png 08d07734712422248a6af552f03453ea.png
-xfsy_0417.png af0133cb94d36f4ab6fd45bb08a12d63.png
-xfsy_0441.png b7fd5266d01609248414333cdf0735fae6cd34e7.png
-xfsy_0518.png 8ed6feb8f72b89632d02fbafcc2511a9.png
-xfsy_0520.png vFG140.png
-vSYYZ15.png vFG74.png
-vSYYZ563.png vHX518.png
-vSYYZ784.png vRX357.png
-vSYYZ86.png XYH-107.png
+vSYYZ17.png vFG11.png
+vSYYZ173.png vFG122.png
+vSYYZ217.png vFG230.png
+vSYYZ253.png vFG251.png
+vSYYZ38.png vFG325.png
+vSYYZ48.png vFG332.png
+vSYYZ551.png vFG403.png
+vSYYZ683.png vFG449.png
+vSYYZ761.png vFG581.png
+vSYYZ769.png vFG587.png
+vSYYZ790.png vFG639.png
+vSYYZ850.png vFG651.png
+vSYYZ861.png vFG844.png
+vSYYZ880.png vFG98.png
+vSYYZ953.png vHX109.png
+XMY-176.png 08d07734712422248a6af552f03453ea.png
+xfsy_0037.png 0d384dbbcc121ca5049c423f81c26e6a.png
+xfsy_0086.png 73f84e0462a6d0331f31f545cf87dae5.png
+xfsy_0103.png 74a81ed20e457944b5273367cc969299.png
+xfsy_0106.png 8ed6feb8f72b89632d02fbafcc2511a9.png
+xfsy_0153.png 9b88951909bde896d18d71c42c2beca1.png
+xfsy_0230.png XMY-005.png
+xfsy_0260.png XMY-014.png
+xfsy_0303.png XMY-060.png
+xfsy_0383.png XMY-402.png
+xfsy_0417.png XYH-005.png
+xfsy_0441.png XYH-049.png
+xfsy_0474.png af0133cb94d36f4ab6fd45bb08a12d63.png
+xfsy_0481.png b41f1f7fd71a2744bd9c2fcfe55e12b6.png
+xfsy_0520.png retertet.png
